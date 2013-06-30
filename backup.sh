@@ -100,7 +100,7 @@ function toggle_read_only {
     else
 
         echo "Returning to write mode"
-        sed -i "s/$MSG//ig" "$wikidir"/LocalSettings.php
+        sed -i "s/$MSG//ig" "$LOCALSETTINGS"
 
     fi
 }
