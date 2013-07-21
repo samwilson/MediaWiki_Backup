@@ -85,7 +85,7 @@ function toggle_read_only {
 
     # If already read-only
     grep "$MSG" "$LOCALSETTINGS" > /dev/null
-    if [ $? -eq 0 ]; then
+    if [ $? -ne 0 ]; then
 
         echo "Entering read-only mode"
         grep "?>" "$LOCALSETTINGS" > /dev/null
@@ -160,6 +160,8 @@ BACKUP_PREFIX=$BACKUP_DIR/$(date +%Y-%m-%d)
 export_sql
 export_xml
 export_images
+
+toggle_read_only
 
 ## End main
 ################################################################################
