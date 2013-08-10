@@ -2,8 +2,10 @@
 #
 # MediaWiki backup and archiving script for installations on Linux using MySQL.
 #
+# https://github.com/samwilson/MediaWiki_Backup
+#
 # Copyright Sam Wilson 2013 CC-BY-SA
-# http://samwilson.id.au/public/MediaWiki
+# http://creativecommons.org/licenses/by-sa/3.0/au/
 #
 
 
