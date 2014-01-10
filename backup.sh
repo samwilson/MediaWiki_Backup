@@ -148,6 +148,14 @@ function export_images {
 }
 
 ################################################################################
+## Export the install directory
+function export_filesystem {
+    FS_BACKUP=$BACKUP_PREFIX"-filesystem.tar.gz"
+    echo "Compressing install directory to $FS_BACKUP"
+    tar --exclude-vcs -czhf "$FS_BACKUP" -C $INSTALL_DIR .
+}
+
+################################################################################
 ## Main
 
 # Preparation
@@ -159,7 +167,7 @@ toggle_read_only
 BACKUP_PREFIX=$BACKUP_DIR/$(date +%Y-%m-%d)
 export_sql
 export_xml
-export_images
+export_filesystem
 
 toggle_read_only
 
