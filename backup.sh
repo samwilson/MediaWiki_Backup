@@ -11,14 +11,26 @@
 ## Output command usage
 function usage {
     local NAME=$(basename $0)
-    echo "Usage: $NAME -d backup/dir -w installation/dir"
+    cat << EOF
+Usage: $NAME -d backup/dir -w installation/dir -c
+
+OPTIONS:
+    -h	Show this message
+    -d  The directory where the backup will be written to
+    -w  The wiki installation directory
+    -c  Make an archive with the content of the whole installation directory, instead of just the 'images' directory
+EOF
 }
 
 ################################################################################
 ## Get and validate CLI options
+COMPLETE=
+
 function get_options {
-    while getopts 'd:w:' OPT; do
+    while getopts 'hcd:w:' OPT; do
         case $OPT in
+            h) usage; exit 1;;
+            c) COMPLETE=1;;
             d) BACKUP_DIR=$OPTARG;;
             w) INSTALL_DIR=$OPTARG;;
         esac
@@ -167,7 +179,14 @@ toggle_read_only
 BACKUP_PREFIX=$BACKUP_DIR/$(date +%Y-%m-%d)
 export_sql
 export_xml
-export_filesystem
+
+# Exports files from the installation directory. Which files are exported 
+# depends on the command line arguments.
+if [ -n "$COMPLETE" ]; then
+    export_filesystem
+else
+    export_images
+fi
 
 toggle_read_only
 
