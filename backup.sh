@@ -121,7 +121,7 @@ function toggle_read_only {
 ## Dump database to SQL
 ## Kudos to https://github.com/milkmiruku/backup-mediawiki
 function export_sql {
-    SQLFILE=$BACKUP_PREFIX"-database.sql.gz"
+    SQLFILE=$BACKUP_PREFIX"-database_$CHARSET.sql.gz"
     echo "Dumping database to $SQLFILE"
     nice -n 19 mysqldump --single-transaction \
         --default-character-set=$CHARSET \
