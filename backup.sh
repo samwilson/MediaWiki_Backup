@@ -137,6 +137,7 @@ function export_sql {
         echo "MySQL Dump failed! (return code of MySQL: $MySQL_RET_CODE)" 1>&2
         exit $ERR_NUM
     fi
+    RUNNING_FILES="$RUNNING_FILES $SQLFILE"
 }
 
 ################################################################################
@@ -148,6 +149,7 @@ function export_xml {
     cd "$INSTALL_DIR/maintenance"
     php -d error_reporting=E_ERROR dumpBackup.php --quiet --full \
     | gzip -9 > "$XML_DUMP"
+    RUNNING_FILES="$RUNNING_FILES $XML_DUMP"
 }
 
 ################################################################################
@@ -157,6 +159,7 @@ function export_images {
     echo "Compressing images to $IMG_BACKUP"
     cd "$INSTALL_DIR"
     tar --exclude-vcs -zcf "$IMG_BACKUP" images
+    RUNNING_FILES="$RUNNING_FILES $IMG_BACKUP"
 }
 
 ################################################################################
@@ -165,6 +168,16 @@ function export_filesystem {
     FS_BACKUP=$BACKUP_PREFIX"-filesystem.tar.gz"
     echo "Compressing install directory to $FS_BACKUP"
     tar --exclude-vcs -czhf "$FS_BACKUP" -C $INSTALL_DIR .
+    RUNNING_FILES="$RUNNING_FILES $FS_BACKUP"
+}
+
+################################################################################
+## Consolidate to one archive
+function consolidate_archives {
+    SINGLE_ARCHIVE=$BACKUP_PREFIX"-mediawiki.tar.gz"
+    echo "Consolidating backups into $SINGLE_ARCHIVE"
+    # The --transform option is responsible for keeping the basename only
+    tar -zcf "$SINGLE_ARCHIVE" $RUNNING_FILES --remove-files --transform='s|.*/||'
 }
 
 ################################################################################
@@ -176,6 +189,7 @@ get_localsettings_vars
 toggle_read_only
 
 # Exports
+RUNNING_FILES=
 BACKUP_PREFIX=$BACKUP_DIR/$(date +%Y-%m-%d)
 export_sql
 export_xml
@@ -187,6 +201,8 @@ if [ -n "$COMPLETE" ]; then
 else
     export_images
 fi
+
+consolidate_archives
 
 toggle_read_only
 
