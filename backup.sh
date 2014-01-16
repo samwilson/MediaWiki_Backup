@@ -73,6 +73,12 @@ function get_options {
 function get_localsettings_vars {
     LOCALSETTINGS="$INSTALL_DIR/LocalSettings.php"
 
+    if [ ! -e $LOCALSETTINGS ];then
+        echo "$LOCALSETTINGS file not found."
+        return 1
+    fi
+    echo "Reading settings from $LOCALSETTINGS."
+
     DB_HOST=`grep '^\$wgDBserver' $LOCALSETTINGS | cut -d\" -f2`
     DB_NAME=`grep '^\$wgDBname' $LOCALSETTINGS  | cut -d\" -f2`
     DB_USER=`grep '^\$wgDBuser' $LOCALSETTINGS  | cut -d\" -f2`
@@ -81,12 +87,12 @@ function get_localsettings_vars {
     # Try to extract default character set from LocalSettings.php
     # but default to binary
     DBTableOptions=$(grep '$wgDBTableOptions' $LOCALSETTINGS)
-    DB_CHARSET=$(echo $DBTableOptions | sed -E 's/.*DB_CHARSET=([^"]*).*/\1/')
+    DB_CHARSET=$(echo $DBTableOptions | sed -E 's/.*CHARSET=([^"]*).*/\1/')
     if [ -z $DB_CHARSET ]; then
         DB_CHARSET="binary"
     fi
 
-    echo "Character set in use: $DB_CHARSET"
+    echo "    Character set in use: $DB_CHARSET."
 }
 
 ################################################################################
@@ -100,7 +106,7 @@ function toggle_read_only {
     grep "$MSG" "$LOCALSETTINGS" > /dev/null
     PRESENT=$?
 
-    if [ $1 -eq "ON" ]; then
+    if [ $1 == "ON" ]; then
         if [ $PRESENT -ne 0 ]; then
             echo "Entering read-only mode"
             grep "?>" "$LOCALSETTINGS" > /dev/null
@@ -110,10 +116,10 @@ function toggle_read_only {
             else
                 echo "$MSG" >> "$LOCALSETTINGS"
             fi 
-        elif
+        else
             echo "Already in read-only mode"
         fi
-    elif [ $1 -eq "OFF" ]; then
+    elif [ $1 == "OFF" ]; then
         # Remove read-only message
         if [ $PRESENT -eq 0 ]; then 
             echo "Returning to write mode"
