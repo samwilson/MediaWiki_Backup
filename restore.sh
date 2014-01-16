@@ -53,7 +53,7 @@ function get_options {
     if [ ! -d $INSTALL_DIR ]; then
         mkdir --parents $INSTALL_DIR;
 	if [ ! -d $INSTALL_DIR ]; then
-            echo -n "Wiki installation directory does not exist and cannot be created" 1>&2
+            echo "Wiki installation directory does not exist and cannot be created" 1>&2
             exit 1;
         fi
     fi
@@ -64,7 +64,7 @@ function get_options {
         usage_restore; exit 1;
     fi
     if [ ! -f $ARCHIVE_FILE ]; then
-        echo -n "Backup archive $ARCHIVE_FILE does not exist" 1>&2
+        echo "Backup archive $ARCHIVE_FILE does not exist" 1>&2
         exit 1;
     fi
 }
