@@ -79,12 +79,12 @@ function get_localsettings_vars {
     # Try to extract default character set from LocalSettings.php
     # but default to binary
     DBTableOptions=$(grep '$wgDBTableOptions' $LOCALSETTINGS)
-    CHARSET=$(echo $DBTableOptions | sed -E 's/.*CHARSET=([^"]*).*/\1/')
-    if [ -z $CHARSET ]; then
-        CHARSET="binary"
+    DB_CHARSET=$(echo $DBTableOptions | sed -E 's/.*DB_CHARSET=([^"]*).*/\1/')
+    if [ -z $DB_CHARSET ]; then
+        DB_CHARSET="binary"
     fi
 
-    echo "Character set in use: $CHARSET"
+    echo "Character set in use: $DB_CHARSET"
 }
 
 ################################################################################
@@ -116,7 +116,7 @@ function toggle_read_only {
         if [ $PRESENT -eq 0 ]; then 
             echo "Returning to write mode"
             sed -i "s/$MSG//ig" "$LOCALSETTINGS"
-        elif
+        else
             echo "Already in write mode"
         fi
     fi
@@ -126,10 +126,10 @@ function toggle_read_only {
 ## Dump database to SQL
 ## Kudos to https://github.com/milkmiruku/backup-mediawiki
 function export_sql {
-    SQLFILE=$BACKUP_PREFIX"-database_$CHARSET.sql.gz"
+    SQLFILE=$BACKUP_PREFIX"-database_$DB_CHARSET.sql.gz"
     echo "Dumping database to $SQLFILE"
     nice -n 19 mysqldump --single-transaction \
-        --default-character-set=$CHARSET \
+        --default-character-set=$DB_CHARSET \
         --host=$DB_HOST \
         --user=$DB_USER \
         --password=$DB_PASS \
