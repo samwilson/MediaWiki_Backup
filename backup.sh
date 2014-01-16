@@ -94,25 +94,31 @@ function toggle_read_only {
     local MSG="\$wgReadOnly = 'Backup in progress.';"
     local LOCALSETTINGS="$INSTALL_DIR/LocalSettings.php"
 
-    # If already read-only
+    # Verify if it is already read only
     grep "$MSG" "$LOCALSETTINGS" > /dev/null
-    if [ $? -ne 0 ]; then
+    PRESENT=$?
 
-        echo "Entering read-only mode"
-        grep "?>" "$LOCALSETTINGS" > /dev/null
-        if [ $? -eq 0 ];
-        then
-            sed -i "s/?>/\n$MSG/ig" "$LOCALSETTINGS"
-        else
-            echo "$MSG" >> "$LOCALSETTINGS"
-        fi 
-
-    # Remove read-only message
-    else
-
-        echo "Returning to write mode"
-        sed -i "s/$MSG//ig" "$LOCALSETTINGS"
-
+    if [ $1 -eq "ON" ]; then
+        if [ $PRESENT -ne 0 ]; then
+            echo "Entering read-only mode"
+            grep "?>" "$LOCALSETTINGS" > /dev/null
+            if [ $? -eq 0 ];
+            then
+                sed -i "s/?>/\n$MSG/ig" "$LOCALSETTINGS"
+            else
+                echo "$MSG" >> "$LOCALSETTINGS"
+            fi 
+        elif
+            echo "Already in read-only mode"
+        fi
+    elif [ $1 -eq "OFF" ]; then
+        # Remove read-only message
+        if [ $PRESENT -eq 0 ]; then 
+            echo "Returning to write mode"
+            sed -i "s/$MSG//ig" "$LOCALSETTINGS"
+        elif
+            echo "Already in write mode"
+        fi
     fi
 }
 
@@ -185,7 +191,7 @@ function consolidate_archives {
 # Preparation
 get_options $@
 get_localsettings_vars
-toggle_read_only
+toggle_read_only ON
 
 # Exports
 RUNNING_FILES=
@@ -203,7 +209,7 @@ fi
 
 consolidate_archives
 
-toggle_read_only
+toggle_read_only OFF
 
 ## End main
 ################################################################################
