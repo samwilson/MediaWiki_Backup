@@ -5,6 +5,8 @@
 # Copyright Sam Wilson 2013 CC-BY-SA
 # http://samwilson.id.au/public/MediaWiki
 #
+# Modified by Adrien D 2013-2014
+#
 
 
 ################################################################################
@@ -188,6 +190,8 @@ function consolidate_archives {
 ################################################################################
 ## Main
 
+if [[ "$BASH_SOURCE" == "$0" ]];then
+
 # Preparation
 get_options $@
 get_localsettings_vars
@@ -211,6 +215,7 @@ consolidate_archives
 
 toggle_read_only OFF
 
+fi #End sourcing guard
 ## End main
 ################################################################################
 
