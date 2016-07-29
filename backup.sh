@@ -13,20 +13,28 @@
 ## Output command usage
 function usage {
     local NAME=$(basename $0)
-    echo "Usage: $NAME -d backup/dir -w installation/dir"
+    echo "Usage: $NAME -d dir -w dir [-s]"
+    echo "       -d <dir>    Path to the desination backup directory. Required."
+    echo "       -w <dir>    Path to the wiki installation directory. Required."
+    echo "       -s          Create a single archive file instead of 3"
+    echo "                   (images, database, and XML). Optional."
+    echo "       -p <prefix> Prefix for the resulting archive file name(s)."
+    echo "                   Defaults to the current date in Y-m-d format. Optional."
 }
 
 ################################################################################
 ## Get and validate CLI options
 function get_options {
-    while getopts 'd:w:' OPT; do
+    while getopts 'd:w:p:s' OPT; do
         case $OPT in
             d) BACKUP_DIR=$OPTARG;;
             w) INSTALL_DIR=$OPTARG;;
+            p) PREFIX=$OPTARG;;
+            s) SINGLE_ARCHIVE=true;;
         esac
     done
 
-    ## Check WIKI_WEB_DIR
+    ## Check wiki installation directory
     if [ -z "$INSTALL_DIR" ]; then
         echo "Please specify the wiki directory with -w" 1>&2
         usage; exit 1;
@@ -38,7 +46,7 @@ function get_options {
     INSTALL_DIR=$(cd $INSTALL_DIR; pwd -P)
     echo "Backing up wiki installed in $INSTALL_DIR"
 
-    ## Check BKP_DIR
+    ## Check backup destination directory
     if [ -z "$BACKUP_DIR" ]; then
         echo "Please provide a backup directory with -d" 1>&2
         usage; exit 1;
@@ -53,6 +61,17 @@ function get_options {
     fi
     BACKUP_DIR=$(cd "$BACKUP_DIR"; pwd -P)
     echo "Backing up to $BACKUP_DIR"
+
+    ## Check and set the archive name prefix
+    if [ -z "$PREFIX" ]; then
+        PREFIX=$(date +%Y-%m-%d)
+    fi
+
+    ## Check whether a single archive file should be created
+    SINGLE_ARCHIVE=false
+    if [ -z $SINGLE_ARCHIVE ]; then
+        SINGLE_ARCHIVE=true
+    fi
 
 }
 
@@ -155,6 +174,18 @@ function export_images {
 }
 
 ################################################################################
+## Combine the three export files into one and delete the three
+function combine_archives {
+    FULL_DUMP=$BACKUP_PREFIX"-backup.tar.gz";
+    echo "Creating full backup archive: $FULL_DUMP"
+    #DUMPS="$BACKUP_PREFIX""-database.sql.gz" 
+    #    $BACKUP_PREFIX"-pages.xml.gz"
+    #    $BACKUP_PREFIX"-images.tar.gz"
+    cd "$BACKUP_DIR"
+    tar -zcf "$FULL_DUMP" "$PREFIX"*.gz
+}
+
+################################################################################
 ## Main
 
 # Preparation
@@ -163,12 +194,16 @@ get_localsettings_vars
 toggle_read_only
 
 # Exports
-BACKUP_PREFIX=$BACKUP_DIR/$(date +%Y-%m-%d)
+BACKUP_PREFIX=$BACKUP_DIR/$PREFIX
 export_sql
 export_xml
 export_images
 
 toggle_read_only
+
+if [ "$SINGLE_ARCHIVE" = true ]; then
+    combine_archives
+fi
 
 ## End main
 ################################################################################
