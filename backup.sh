@@ -85,6 +85,11 @@ function toggle_read_only {
     local MSG="\$wgReadOnly = 'Backup in progress.';"
     local LOCALSETTINGS="$INSTALL_DIR/LocalSettings.php"
 
+    # Don't do anything if we can't write to LocalSettings.php
+    if [ ! -w "$LOCALSETTINGS" ]; then
+        return 0
+    fi
+
     # If already read-only
     grep "$MSG" "$LOCALSETTINGS" > /dev/null
     if [ $? -ne 0 ]; then
