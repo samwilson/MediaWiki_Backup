@@ -27,11 +27,11 @@ function get_options {
     done
 
     ## Check WIKI_WEB_DIR
-    if [ -z $INSTALL_DIR ]; then
+    if [ -z "$INSTALL_DIR" ]; then
         echo "Please specify the wiki directory with -w" 1>&2
         usage; exit 1;
     fi
-    if [ ! -f $INSTALL_DIR/LocalSettings.php ]; then
+    if [ ! -f "$INSTALL_DIR/LocalSettings.php" ]; then
         echo "No LocalSettings.php found in $INSTALL_DIR" 1>&2
         exit 1;
     fi
@@ -39,19 +39,19 @@ function get_options {
     echo "Backing up wiki installed in $INSTALL_DIR"
 
     ## Check BKP_DIR
-    if [ -z $BACKUP_DIR ]; then
+    if [ -z "$BACKUP_DIR" ]; then
         echo "Please provide a backup directory with -d" 1>&2
         usage; exit 1;
     fi
-    if [ ! -d $BACKUP_DIR ]; then
+    if [ ! -d "$BACKUP_DIR" ]; then
         mkdir --parents $BACKUP_DIR;
-        if [ ! -d $BACKUP_DIR ]; then
+        if [ ! -d "$BACKUP_DIR" ]; then
             echo -n "Backup directory $BACKUP_DIR does not exist" 1>&2
             echo " and could not be created" 1>&2
             exit 1;
         fi
     fi
-    BACKUP_DIR=$(cd $BACKUP_DIR; pwd -P)
+    BACKUP_DIR=$(cd "$BACKUP_DIR"; pwd -P)
     echo "Backing up to $BACKUP_DIR"
 
 }
