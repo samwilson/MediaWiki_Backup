@@ -160,8 +160,9 @@ function export_xml {
     XML_DUMP=$BACKUP_PREFIX"-pages.xml.gz"
     echo "Exporting XML to $XML_DUMP"
     cd "$INSTALL_DIR/maintenance"
-    php -d error_reporting=E_ERROR dumpBackup.php --quiet --full \
-    | gzip -9 > "$XML_DUMP"
+    php -d error_reporting=E_ERROR dumpBackup.php \
+        --conf="$INSTALL_DIR/LocalSettings.php" --quiet --full \
+        | gzip -9 > "$XML_DUMP"
 }
 
 ################################################################################
