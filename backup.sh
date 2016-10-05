@@ -168,9 +168,14 @@ function export_xml {
     XML_DUMP=$BACKUP_PREFIX"-pages.xml.gz"
     echo "Exporting XML to $XML_DUMP"
     cd "$INSTALL_DIR/maintenance"
-    php -d error_reporting=E_ERROR dumpBackup.php \
-        --conf="$INSTALL_DIR/LocalSettings.php" --quiet --full \
-        | gzip -9 > "$XML_DUMP"
+    ## Make sure PHP is found.
+    if hash php 2>/dev/null; then
+        php -d error_reporting=E_ERROR dumpBackup.php \
+            --conf="$INSTALL_DIR/LocalSettings.php" --quiet --full \
+            | gzip -9 > "$XML_DUMP"
+    else
+        echo "Error: Unable to find PHP; not exporting XML" 1>&2
+    fi
 }
 
 ################################################################################
