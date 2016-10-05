@@ -16,21 +16,24 @@ function usage {
     echo "Usage: $NAME -d dir -w dir [-s]"
     echo "       -d <dir>    Path to the desination backup directory. Required."
     echo "       -w <dir>    Path to the wiki installation directory. Required."
-    echo "       -s          Create a single archive file instead of 3"
+    echo "       -s          Create a single archive file instead of three"
     echo "                   (images, database, and XML). Optional."
     echo "       -p <prefix> Prefix for the resulting archive file name(s)."
     echo "                   Defaults to the current date in Y-m-d format. Optional."
+    echo "       -h          Follow (dereference) symlinks for the 'images'"
+    echo "                   directory. Optional."
 }
 
 ################################################################################
 ## Get and validate CLI options
 function get_options {
-    while getopts 'd:w:p:s' OPT; do
+    while getopts 'd:w:p:s:h' OPT; do
         case $OPT in
             d) BACKUP_DIR=$OPTARG;;
             w) INSTALL_DIR=$OPTARG;;
-            p) PREFIX=$OPTARG;;
             s) SINGLE_ARCHIVE=true;;
+            p) PREFIX=$OPTARG;;
+            h) DEREFERENCE_IMG=true;;
         esac
     done
 
@@ -68,11 +71,16 @@ function get_options {
     fi
 
     ## Check whether a single archive file should be created
-    SINGLE_ARCHIVE=false
-    if [ -z $SINGLE_ARCHIVE ]; then
-        SINGLE_ARCHIVE=true
+    if [ "$SINGLE_ARCHIVE" = true ]; then
+        echo "Creating a single archive file"
     fi
 
+    ## Dereference symlinks for the 'images' directory?
+    if [ "$DEREFERENCE_IMG" = true ]; then
+        echo "Symlinks will be followed for the 'images' directory"
+    else
+        echo "Symlinks will NOT be followed for the 'images' directory"
+    fi
 }
 
 ################################################################################
@@ -84,7 +92,7 @@ function get_localsettings_vars {
     DB_NAME=`grep '^\$wgDBname' $LOCALSETTINGS  | cut -d\" -f2`
     DB_USER=`grep '^\$wgDBuser' $LOCALSETTINGS  | cut -d\" -f2`
     DB_PASS=`grep '^\$wgDBpassword' $LOCALSETTINGS  | cut -d\" -f2`
-    echo "Logging in as $DB_USER to $DB_HOST to backup $DB_NAME"
+    echo "Logging in to MySQL as $DB_USER to $DB_HOST to backup $DB_NAME"
 
     # Try to extract default character set from LocalSettings.php
     # but default to binary
@@ -170,8 +178,16 @@ function export_xml {
 function export_images {
     IMG_BACKUP=$BACKUP_PREFIX"-images.tar.gz"
     echo "Compressing images to $IMG_BACKUP"
+    if [ -z "$DEREFERENCE_IMG" -a -h "$INSTALL_DIR/images" ]; then
+        (>&2 echo "Warning: images directory is a symlink, but you have not elected to follow symlinks")
+    fi
+    if [ "$DEREFERENCE_IMG" = true ]; then
+        DEREF="--dereference"
+    else
+        DEREF=""
+    fi
     cd "$INSTALL_DIR"
-    tar --exclude-vcs -zcf "$IMG_BACKUP" images
+    tar --create --exclude-vcs $DEREF --gzip --file "$IMG_BACKUP" images
 }
 
 ################################################################################
