@@ -88,10 +88,10 @@ function get_options {
 function get_localsettings_vars {
     LOCALSETTINGS="$INSTALL_DIR/LocalSettings.php"
 
-    DB_HOST=`grep '^\$wgDBserver' $LOCALSETTINGS | cut -d\" -f2`
-    DB_NAME=`grep '^\$wgDBname' $LOCALSETTINGS  | cut -d\" -f2`
-    DB_USER=`grep '^\$wgDBuser' $LOCALSETTINGS  | cut -d\" -f2`
-    DB_PASS=`grep '^\$wgDBpassword' $LOCALSETTINGS  | cut -d\" -f2`
+    DB_HOST=$(grep '^\$wgDBserver' $LOCALSETTINGS | cut -d\" -f2)
+    DB_NAME=$(grep '^\$wgDBname' $LOCALSETTINGS  | cut -d\" -f2)
+    DB_USER=$(grep '^\$wgDBuser' $LOCALSETTINGS  | cut -d\" -f2)
+    DB_PASS=$(grep '^\$wgDBpassword' $LOCALSETTINGS  | cut -d\" -f2)
     echo "Logging in to MySQL as $DB_USER to $DB_HOST to backup $DB_NAME"
 
     # Try to extract default character set from LocalSettings.php
