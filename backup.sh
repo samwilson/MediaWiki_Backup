@@ -6,6 +6,13 @@
 #
 # Copyright Sam Wilson 2013 CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/3.0/au/
+# This work is a derivative of:
+# - Initial bakup-mediawiki.sh script by xenlo (used under CC-BY-SA)
+#   https://serom.eu/index.php/Backup_du_SeRoM_Wiki
+# - Updated by mxmilkb (also used under CC-BY-SA)
+#   https://github.com/mxmilkb/backup-mediawiki/blob/master/backup-mediawiki.sh
+# - WikiBackup script by Megam0rf (still under CC-BY-SA)
+#   https://www.mediawiki.org/wiki/User:Megam0rf/WikiBackup
 #
 
 
