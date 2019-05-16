@@ -75,7 +75,7 @@ function get_options {
 function execute_sql {
     SQL_STATEMENT=$1
     echo "Executing statement : '$SQL_STATEMENT'"
-    echo $SQL_STATEMENT | mysql -u root --password=$MYSQL_ROOT_PWD
+    echo $SQL_STATEMENT | mysql -u root --password=$MYSQL_ROOT_PWD --host=$DB_HOST 
 }
   
 function restore_database {
@@ -100,7 +100,7 @@ function restore_database_content {
     fi
 
     echo "Restoring database '$DB_NAME' from file $SQLFILE" 
-    gunzip -c $SQLFILE | mysql -u root --password=$MYSQL_ROOT_PWD $DB_NAME
+    gunzip -c $SQLFILE | mysql -u root --password=$MYSQL_ROOT_PWD --host=$DB_HOST $DB_NAME
 }
 
 ################################################################################
