@@ -18,7 +18,7 @@ function usage_restore {
 Usage: $NAME -a backup-archive -w installation/dir [-p mysql-password [-d] [-u]]
 
 OPTIONS:
-    -h	Show this message.
+    -h  Show this message.
     -a  The archive containing the backup.
     -w  The wiki installation directory where the backup should be restored.
     -p  The MySQL root password.
@@ -31,8 +31,8 @@ EOF
 ## Get and validate CLI options
 
 function get_options {
-    RESTORE_USER=	
-    RESTORE_DB=	
+    RESTORE_USER=
+    RESTORE_DB=
 
     while getopts 'hdua:w:p:' OPT; do
         case $OPT in
@@ -52,7 +52,7 @@ function get_options {
     fi
     if [ ! -d $INSTALL_DIR ]; then
         mkdir --parents $INSTALL_DIR;
-	if [ ! -d $INSTALL_DIR ]; then
+        if [ ! -d $INSTALL_DIR ]; then
             echo "Wiki installation directory does not exist and cannot be created" 1>&2
             exit 1;
         fi
@@ -107,7 +107,14 @@ function restore_database_content {
 ## Filesystem restoration
 function restore_filesystem {
     echo "Extracting filesystem from $FS_BACKUP"
-    tar -xzf "$FS_BACKUP" -C $INSTALL_DIR .
+    tar -xzf "$FS_BACKUP" -C $INSTALL_DIR
+}
+
+################################################################################
+## Images restoration
+function restore_images {
+    echo "Extracting images from $IMG_BACKUP"
+    tar -xzf "$IMG_BACKUP" -C $INSTALL_DIR
 }
 
 ################################################################################
@@ -122,6 +129,12 @@ function retrieve_archive_info {
     FS_BACKUP=$BACKUP_PREFIX"-filesystem.tar.gz"
     if [ ! -e $FS_BACKUP ]; then
         FS_BACKUP=
+    fi
+
+    # Analyze the images restoration options
+    IMG_BACKUP=$BACKUP_PREFIX"-images.tar.gz"
+    if [ ! -e $IMG_BACKUP ]; then
+        IMG_BACKUP=
     fi
 
     # Analyze DB restoration options
@@ -141,7 +154,7 @@ function expand_single_archive {
 }
 
 function cleanup_archive_expansion {
-    rm -r TMP_DIR
+    rm -r ${TMP_DIR}
 }
 
 ################################################################################
@@ -158,6 +171,11 @@ if [ ! -z $FS_BACKUP ]; then
     restore_filesystem
 else
     echo "No filesystem archive was found."
+    if [ ! -z $IMG_BACKUP ]; then
+        restore_images
+    else
+        echo "No image archive was found."
+    fi
 fi
 
 ## It is now possible to try reading LocalSettings.php
@@ -175,6 +193,6 @@ restore_database_content
 # The backup procedure would save LocalSettings in read-only mode
 toggle_read_only OFF
 
-#cleanup_archive_expansion
+cleanup_archive_expansion
 
 fi # end sourcing guard
