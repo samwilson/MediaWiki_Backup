@@ -39,7 +39,7 @@ function usage {
 ################################################################################
 ## Get and validate CLI options
 function get_options {
-    while getopts 'h:c:d:w:s:p:f' OPT; do
+    while getopts 'hcd:w:sp:f' OPT; do
         case $OPT in
             h) usage; exit 1;;
             c) COMPLETE=true;;
