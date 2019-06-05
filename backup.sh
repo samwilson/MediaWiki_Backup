@@ -241,7 +241,7 @@ function export_filesystem {
 ################################################################################
 ## Consolidate to one archive
 function combine_archives {
-    FULL_ARCHIVE=$BACKUP_PREFIX"-mediawiki-backup.tar.gz"
+    FULL_ARCHIVE=$BACKUP_PREFIX"-mediawiki_backup.tar.gz"
     echo "Consolidating backups into $FULL_ARCHIVE"
     # The --transform option is responsible for keeping the basename only
     tar -zcf "$FULL_ARCHIVE" $RUNNING_FILES --remove-files --transform='s|.*/||'
@@ -277,6 +277,8 @@ toggle_read_only OFF
 if [ "$SINGLE_ARCHIVE" = true ]; then
     combine_archives
 fi
+
+fi #End sourcing guard
 
 ## End main
 ################################################################################
