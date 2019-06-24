@@ -102,21 +102,21 @@ function get_options {
 function get_localsettings_vars {
     LOCALSETTINGS="$INSTALL_DIR/LocalSettings.php"
 
-    if [ ! -e $LOCALSETTINGS ];then
-        echo "$LOCALSETTINGS file not found."
+    if [ ! -e "$LOCALSETTINGS" ];then
+        echo "'$LOCALSETTINGS' file not found."
         return 1
     fi
-    echo "Reading settings from $LOCALSETTINGS."
+    echo "Reading settings from '$LOCALSETTINGS'."
 
-    DB_HOST=$(grep '^\$wgDBserver' $LOCALSETTINGS | cut -d\" -f2)
-    DB_NAME=$(grep '^\$wgDBname' $LOCALSETTINGS  | cut -d\" -f2)
-    DB_USER=$(grep '^\$wgDBuser' $LOCALSETTINGS  | cut -d\" -f2)
-    DB_PASS=$(grep '^\$wgDBpassword' $LOCALSETTINGS  | cut -d\" -f2)
+    DB_HOST=$(grep '^\$wgDBserver' "$LOCALSETTINGS" | cut -d\" -f2)
+    DB_NAME=$(grep '^\$wgDBname' "$LOCALSETTINGS"  | cut -d\" -f2)
+    DB_USER=$(grep '^\$wgDBuser' "$LOCALSETTINGS"  | cut -d\" -f2)
+    DB_PASS=$(grep '^\$wgDBpassword' "$LOCALSETTINGS"  | cut -d\" -f2)
     echo "Logging in to MySQL as $DB_USER to $DB_HOST to backup $DB_NAME"
 
     # Try to extract default character set from LocalSettings.php
     # but default to binary
-    DBTableOptions=$(grep '$wgDBTableOptions' $LOCALSETTINGS)
+    DBTableOptions=$(grep '$wgDBTableOptions' "$LOCALSETTINGS")
     DB_CHARSET=$(echo $DBTableOptions | sed -E 's/.*CHARSET=([^"]*).*/\1/')
     if [ -z $DB_CHARSET ]; then
         DB_CHARSET="binary"
@@ -130,7 +130,6 @@ function get_localsettings_vars {
 ## Kudos to http://www.mediawiki.org/wiki/User:Megam0rf/WikiBackup
 function toggle_read_only {
     local MSG="\$wgReadOnly = 'Backup in progress.';"
-    local LOCALSETTINGS="$INSTALL_DIR/LocalSettings.php"
 
     # Don't do anything if we can't write to LocalSettings.php
     if [ ! -w "$LOCALSETTINGS" ]; then
