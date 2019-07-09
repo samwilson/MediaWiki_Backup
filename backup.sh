@@ -13,6 +13,8 @@
 #   https://github.com/mxmilkb/backup-mediawiki/blob/master/backup-mediawiki.sh
 # - WikiBackup script by Megam0rf (still under CC-BY-SA)
 #   https://www.mediawiki.org/wiki/User:Megam0rf/WikiBackup
+# - Modified by Adnn, initial restore.sh script
+#    https://github.com/Adnn/MediaWiki_Backup/
 #
 
 
@@ -20,27 +22,32 @@
 ## Output command usage
 function usage {
     local NAME=$(basename $0)
-    echo "Usage: $NAME -d dir -w dir [-s]"
+    echo "Usage: $NAME -d dir -w dir [-s] [-p prefix] [-f] [-c]"
     echo "       -d <dir>    Path to the desination backup directory. Required."
     echo "       -w <dir>    Path to the wiki installation directory. Required."
     echo "       -s          Create a single archive file instead of three"
     echo "                   (images, database, and XML). Optional."
     echo "       -p <prefix> Prefix for the resulting archive file name(s)."
     echo "                   Defaults to the current date in Y-m-d format. Optional."
-    echo "       -h          Follow (dereference) symlinks for the 'images'"
+    echo "       -f          Follow (dereference) symlinks for the 'images'"
     echo "                   directory. Optional."
+    echo "       -c          Backup the complete wiki installation directory,"
+    echo "                   not just the images. Optional."
+    echo "       -h          Show this help message. Optional."
 }
 
 ################################################################################
 ## Get and validate CLI options
 function get_options {
-    while getopts 'd:w:p:s:h' OPT; do
+    while getopts 'hcd:w:sp:f' OPT; do
         case $OPT in
+            h) usage; exit 1;;
+            c) COMPLETE=true;;
             d) BACKUP_DIR=$OPTARG;;
             w) INSTALL_DIR=$OPTARG;;
             s) SINGLE_ARCHIVE=true;;
             p) PREFIX=$OPTARG;;
-            h) DEREFERENCE_IMG=true;;
+            f) DEREFERENCE_IMG=true;;
         esac
     done
 
@@ -95,21 +102,27 @@ function get_options {
 function get_localsettings_vars {
     LOCALSETTINGS="$INSTALL_DIR/LocalSettings.php"
 
-    DB_HOST=$(grep '^\$wgDBserver' $LOCALSETTINGS | cut -d\" -f2)
-    DB_NAME=$(grep '^\$wgDBname' $LOCALSETTINGS  | cut -d\" -f2)
-    DB_USER=$(grep '^\$wgDBuser' $LOCALSETTINGS  | cut -d\" -f2)
-    DB_PASS=$(grep '^\$wgDBpassword' $LOCALSETTINGS  | cut -d\" -f2)
+    if [ ! -e "$LOCALSETTINGS" ];then
+        echo "'$LOCALSETTINGS' file not found."
+        return 1
+    fi
+    echo "Reading settings from '$LOCALSETTINGS'."
+
+    DB_HOST=$(grep '^\$wgDBserver' "$LOCALSETTINGS" | cut -d\" -f2)
+    DB_NAME=$(grep '^\$wgDBname' "$LOCALSETTINGS"  | cut -d\" -f2)
+    DB_USER=$(grep '^\$wgDBuser' "$LOCALSETTINGS"  | cut -d\" -f2)
+    DB_PASS=$(grep '^\$wgDBpassword' "$LOCALSETTINGS"  | cut -d\" -f2)
     echo "Logging in to MySQL as $DB_USER to $DB_HOST to backup $DB_NAME"
 
     # Try to extract default character set from LocalSettings.php
     # but default to binary
-    DBTableOptions=$(grep '$wgDBTableOptions' $LOCALSETTINGS)
-    CHARSET=$(echo $DBTableOptions | sed -E 's/.*CHARSET=([^"]*).*/\1/')
-    if [ -z $CHARSET ]; then
-        CHARSET="binary"
+    DBTableOptions=$(grep '$wgDBTableOptions' "$LOCALSETTINGS")
+    DB_CHARSET=$(echo $DBTableOptions | sed -E 's/.*CHARSET=([^"]*).*/\1/')
+    if [ -z $DB_CHARSET ]; then
+        DB_CHARSET="binary"
     fi
 
-    echo "Character set in use: $CHARSET"
+    echo "Character set in use: $DB_CHARSET."
 }
 
 ################################################################################
@@ -117,32 +130,38 @@ function get_localsettings_vars {
 ## Kudos to http://www.mediawiki.org/wiki/User:Megam0rf/WikiBackup
 function toggle_read_only {
     local MSG="\$wgReadOnly = 'Backup in progress.';"
-    local LOCALSETTINGS="$INSTALL_DIR/LocalSettings.php"
 
     # Don't do anything if we can't write to LocalSettings.php
     if [ ! -w "$LOCALSETTINGS" ]; then
-        return 0
+        echo "Cannot control read-only mode, aborting" 1>&2
+        return 1
     fi
 
-    # If already read-only
+    # Verify if it is already read only
     grep "$MSG" "$LOCALSETTINGS" > /dev/null
-    if [ $? -ne 0 ]; then
+    PRESENT=$?
 
-        echo "Entering read-only mode"
-        grep "?>" "$LOCALSETTINGS" > /dev/null
-        if [ $? -eq 0 ];
-        then
-            sed -i "s/?>/\n$MSG/ig" "$LOCALSETTINGS"
+    if [ $1 == "ON" ]; then
+        if [ $PRESENT -ne 0 ]; then
+            echo "Entering read-only mode"
+            grep "?>" "$LOCALSETTINGS" > /dev/null
+            if [ $? -eq 0 ];
+            then
+                sed -i "s/?>/\n$MSG/ig" "$LOCALSETTINGS"
+            else
+                echo "$MSG" >> "$LOCALSETTINGS"
+            fi 
         else
-            echo "$MSG" >> "$LOCALSETTINGS"
-        fi 
-
-    # Remove read-only message
-    else
-
-        echo "Returning to write mode"
-        sed -i "/$MSG/d" "$LOCALSETTINGS"
-
+            echo "Already in read-only mode"
+        fi
+    elif [ $1 == "OFF" ]; then
+        # Remove read-only message
+        if [ $PRESENT -eq 0 ]; then 
+            echo "Returning to write mode"
+            sed -i "s/$MSG//ig" "$LOCALSETTINGS"
+        else
+            echo "Already in write mode"
+        fi
     fi
 }
 
@@ -150,10 +169,10 @@ function toggle_read_only {
 ## Dump database to SQL
 ## Kudos to https://github.com/milkmiruku/backup-mediawiki
 function export_sql {
-    SQLFILE=$BACKUP_PREFIX"-database.sql.gz"
+    SQLFILE=$BACKUP_PREFIX"-database_$DB_CHARSET.sql.gz"
     echo "Dumping database to $SQLFILE"
     nice -n 19 mysqldump --single-transaction \
-        --default-character-set=$CHARSET \
+        --default-character-set=$DB_CHARSET \
         --host=$DB_HOST \
         --user=$DB_USER \
         --password=$DB_PASS \
@@ -166,6 +185,7 @@ function export_sql {
         echo "MySQL Dump failed! (return code of MySQL: $MySQL_RET_CODE)" 1>&2
         exit $ERR_NUM
     fi
+    RUNNING_FILES="$RUNNING_FILES $SQLFILE"
 }
 
 ################################################################################
@@ -181,6 +201,8 @@ function export_xml {
             --conf="$INSTALL_DIR/LocalSettings.php" \
             --quiet --full --logs --uploads \
             | gzip -9 > "$XML_DUMP"
+
+        RUNNING_FILES="$RUNNING_FILES $XML_DUMP"
     else
         echo "Error: Unable to find PHP; not exporting XML" 1>&2
     fi
@@ -201,41 +223,61 @@ function export_images {
     fi
     cd "$INSTALL_DIR"
     tar --create --exclude-vcs $DEREF --gzip --file "$IMG_BACKUP" images
+    RUNNING_FILES="$RUNNING_FILES $IMG_BACKUP"
 }
 
+
 ################################################################################
-## Combine the three export files into one and delete the three
-function combine_archives {
-    FULL_DUMP=$BACKUP_PREFIX"-backup.tar.gz";
-    echo "Creating full backup archive: $FULL_DUMP"
-    #DUMPS="$BACKUP_PREFIX""-database.sql.gz" 
-    #    $BACKUP_PREFIX"-pages.xml.gz"
-    #    $BACKUP_PREFIX"-images.tar.gz"
-    cd "$BACKUP_DIR"
-    tar -zcf "$FULL_DUMP" "$PREFIX"*.gz
+## Export the complete install directory
+function export_filesystem {
+    FS_BACKUP=$BACKUP_PREFIX"-filesystem.tar.gz"
+    echo "Compressing install directory to $FS_BACKUP"
+    tar --exclude-vcs -czhf "$FS_BACKUP" -C $INSTALL_DIR .
+    RUNNING_FILES="$RUNNING_FILES $FS_BACKUP"
 }
+
+
+################################################################################
+## Consolidate to one archive
+function combine_archives {
+    FULL_ARCHIVE=$BACKUP_PREFIX"-mediawiki_backup.tar.gz"
+    echo "Consolidating backups into $FULL_ARCHIVE"
+    # The --transform option is responsible for keeping the basename only
+    tar -zcf "$FULL_ARCHIVE" $RUNNING_FILES --remove-files --transform='s|.*/||'
+}
+
 
 ################################################################################
 ## Main
 
+if [[ "$BASH_SOURCE" == "$0" ]];then
+
 # Preparation
 get_options $@
 get_localsettings_vars
-toggle_read_only
+toggle_read_only ON
 
 # Exports
+RUNNING_FILES=
 BACKUP_PREFIX=$BACKUP_DIR/$PREFIX
 export_sql
 export_xml
-export_images
 
-toggle_read_only
+# Exports files from the installation directory. Which files are exported 
+# depends on the command line arguments.
+if [ "$COMPLETE" = true ]; then
+    export_filesystem
+else
+    export_images
+fi
+
+toggle_read_only OFF
 
 if [ "$SINGLE_ARCHIVE" = true ]; then
     combine_archives
 fi
 
+fi #End sourcing guard
+
 ## End main
 ################################################################################
-
-# eh? what's this do? exec > /dev/null
