@@ -6,7 +6,7 @@
 #
 
 ################################################################################
-## Includes backup.sh to get access to its functions
+## Includes backup.sh to get access to its functions
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $DIR/backup.sh
 
@@ -107,14 +107,14 @@ function restore_database_content {
 ## Filesystem restoration
 function restore_filesystem {
     echo "Extracting filesystem from $FS_BACKUP"
-    tar -xzf "$FS_BACKUP" -C $INSTALL_DIR
+    tar -xzf "$FS_BACKUP" -C "$INSTALL_DIR"
 }
 
 ################################################################################
 ## Images restoration
 function restore_images {
     echo "Extracting images from $IMG_BACKUP"
-    tar -xzf "$IMG_BACKUP" -C $INSTALL_DIR
+    tar -xzf "$IMG_BACKUP" -C "$INSTALL_DIR"
 }
 
 ################################################################################
@@ -141,37 +141,37 @@ function retrieve_archive_info {
     SQLFILE=$TMP_DIR/$(ls $TMP_DIR |grep "database"|head -1)
     _ENDSQL=${SQLFILE##*_}
     ARCHIVE_DB_CHARSET=${_ENDSQL%%.*}
-    echo "SQL dump $(basename $SQLFILE) found, with charset $ARCHIVE_DB_CHARSET."
+    echo "SQL dump $(basename "$SQLFILE") found, with charset $ARCHIVE_DB_CHARSET."
 }
 
 ################################################################################
 ## Archive expansion and clean-up
 function expand_single_archive {
-    ARCHIVE_BASENAME=$(basename $ARCHIVE_FILE)
+    ARCHIVE_BASENAME=$(basename "$ARCHIVE_FILE")
     TMP_DIR="/tmp/"${ARCHIVE_BASENAME%%.*}
-    mkdir -p $TMP_DIR
-    tar -xzf "$ARCHIVE_FILE" -C $TMP_DIR
+    mkdir -p "$TMP_DIR"
+    tar -xzf "$ARCHIVE_FILE" -C "$TMP_DIR"
 }
 
 function cleanup_archive_expansion {
-    rm -r ${TMP_DIR}
+    rm -r "${TMP_DIR}"
 }
 
 ################################################################################
 ################################################################################
 if [[ "$BASH_SOURCE" == "$0" ]];then
 
-get_options $@
+get_options "$@"
 ## First restores the filesystem archive
 ## This will allow us to access LocalSettings.php
 expand_single_archive
 retrieve_archive_info
 
-if [ ! -z $FS_BACKUP ]; then
+if [ -n "$FS_BACKUP" ]; then
     restore_filesystem
 else
     echo "No filesystem archive was found."
-    if [ ! -z $IMG_BACKUP ]; then
+    if [ -n "$IMG_BACKUP" ]; then
         restore_images
     else
         echo "No image archive was found."
@@ -181,10 +181,10 @@ fi
 ## It is now possible to try reading LocalSettings.php
 get_localsettings_vars
 
-if [ ! -z $RESTORE_DB ];then
+if [ -n "$RESTORE_DB" ];then
     restore_database
 fi
-if [ ! -z $RESTORE_USER ];then
+if [ -n "$RESTORE_USER" ];then
     restore_user
 fi
 
